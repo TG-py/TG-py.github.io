@@ -62,13 +62,13 @@
             sprite.y = app.screen.height *0.85;
 
             var shipPos = 0.5
-            
+
             app.ticker.add(() =>
             {
                 const moveSpeed = 0.01
 
-                if (controller.keys.left) shipPos -= moveSpeed
-                else if (controller.keys.right) shipPos += moveSpeed
+                if (controller.keys.left && shipPos > 0) shipPos -= moveSpeed
+                else if (controller.keys.right && shipPos < 1) shipPos += moveSpeed
 
                 sprite.x = app.screen.width *shipPos;
             });
