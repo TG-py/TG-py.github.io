@@ -8,6 +8,8 @@
 
     <body>
         <script type="module">
+            import {Controller} from `./Controller`;
+
             const app = new PIXI.Application();
             await app.init({ background: `#1099bb`, width: window.innerWidth-22, height: window.innerHeight-22});
 
@@ -16,12 +18,25 @@
             await PIXI.Assets.load('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
             let sprite = PIXI.Sprite.from('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
 
+            const controller = new Controller();
+
             app.stage.addChild(sprite);
             
             sprite.anchor.set(0.5);
 
             sprite.x = app.screen.width *0.5;
             sprite.y = app.screen.height *0.85;
+
+            app.ticker.add(() =>
+            {
+                const moveSpeed = 0.01
+                var shipPos = 0.5
+
+                if (controller.keys.left) shipPos -= moveSpeed
+                else if (controller.keys.right) shipPos += moveSpeed
+
+                sprite.x = app.screen.width *shipPos;
+            });
         </script>
     </body>
 </html>
