@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Game</title>
+        <script src="https://pixijs.download/release/pixi.js"></script>
+    </head>
+
+    <body>
+        <script type="module">
+            const keyMap = {
+            KeyA: `left`,
+            KeyD: `right`,
+            Space: `space`
+            };
+
+            export class Controller
+            {
+                constructor()
+                {
+                    this.keys = {
+                        left: false,
+                        right: false,
+                        space: false
+                    };
+
+                    window.addEventListener(`keydown`, (event) => this.keydownHandler(event));
+                    window.addEventListener(`keyup`, (event) => this.keyupHandler(event));
+                }
+
+                keydownHandler(event)
+                {
+                    const key = keyMap[event.code];
+
+                    if (!key) return;
+
+                    this.keys[key] = true;
+                }
+
+                keyupHandler(event)
+                {
+                    const key = keyMap[event.code];
+
+                    if (!key) return;
+
+                    this.keys[key] = false;
+                }
+            }
+
+            const app = new PIXI.Application();
+            await app.init({ background: `#1099bb`, width: window.innerWidth-22, height: window.innerHeight-22});
+
+            document.body.appendChild(app.canvas);
+
+            await PIXI.Assets.load('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
+            let ship = PIXI.Sprite.from('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
+
+            const controller = new Controller();
+
+            app.stage.addChild(ship);
+            ship.anchor.set(0.5);
+            ship.scale = app.screen.width/1898;
+            ship.x = app.screen.width *0.5;
+            ship.y = app.screen.height *0.85;
+
+            var shipPos = 0.5;
+            var lasers = [];
+            const cooldown = 200;
+            var endOfCooldown = Date.now();
+
+            app.ticker.add(() =>
+            {
+                const moveSpeed = 0.01;
+
+                if (controller.keys.left && shipPos > 0) shipPos -= moveSpeed;
+                else if (controller.keys.right && shipPos < 1) shipPos += moveSpeed;
+                
+                ship.x = app.screen.width *shipPos;
+
+                if (controller.keys.space && endOfCooldown <= Date.now()) {
+                    let laserGraphics = new PIXI.Graphics();
+                    laserGraphics.rect(0,0,7,40);
+                    laserGraphics.fill(0xff0000);
+                    let texture = app.renderer.generateTexture(laserGraphics);
+                    let laser = new PIXI.Sprite(texture);
+
+                    laser.anchor.set(0.5);
+                    laser.scale = app.screen.width/1898;
+                    laser.x = app.screen.width *shipPos;
+                    laser.y = app.screen.height *0.85;
+
+                    app.stage.addChild(laser);
+
+                    lasers.push(laser);
+
+                    endOfCooldown = Date.now() + cooldown;
+                }
+
+                for (let i = 0; i < lasers.length; i++) {
+                    lasers[i].y -= app.screen.height *0.01
+                    if (lasers[i].y < 0) {
+                        app.stage.removeChild(lasers[i]);
+                        lasers.splice(i,1);
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
