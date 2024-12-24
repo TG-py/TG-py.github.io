@@ -7,6 +7,8 @@
 
     <body>
         <script type="module">
+            const startTime = Date.now();
+
             const keyMap = {
             KeyA: `left`,
             KeyD: `right`,
@@ -66,6 +68,8 @@
             var lasers = [];
             const cooldown = 200;
             var endOfCooldown = Date.now();
+            var asteroidSpawn = Date.now();
+            var asteroids = [];
 
             app.ticker.add(() =>
             {
@@ -77,10 +81,10 @@
                 ship.x = app.screen.width *shipPos;
 
                 if (controller.keys.space && endOfCooldown <= Date.now()) {
-                    let laserGraphics = new PIXI.Graphics();
-                    laserGraphics.rect(0,0,7,40);
-                    laserGraphics.fill(0xff0000);
-                    let texture = app.renderer.generateTexture(laserGraphics);
+                    let laserGr = new PIXI.Graphics();
+                    laserGr.rect(0,0,7,40);
+                    laserGr.fill(0xff0000);
+                    let texture = app.renderer.generateTexture(laserGr);
                     let laser = new PIXI.Sprite(texture);
 
                     laser.anchor.set(0.5);
@@ -96,10 +100,42 @@
                 }
 
                 for (let i = 0; i < lasers.length; i++) {
-                    lasers[i].y -= app.screen.height *0.01
+                    lasers[i].y -= app.screen.height *0.05;
                     if (lasers[i].y < 0) {
                         app.stage.removeChild(lasers[i]);
                         lasers.splice(i,1);
+                    }
+                }
+
+                if (asteroidSpawn <= Date.now()) {
+                    let asteroidGr = new PIXI.Graphics();
+                    asteroidGr.circle(0,0,50);
+                    asteroidGr.fill(0x282828);
+                    let texture = app.renderer.generateTexture(asteroidGr);
+                    let asteroid = new PIXI.Sprite(texture);
+
+                    asteroid.anchor.set(0.5);
+                    asteroid.scale = app.screen.width/1898;
+                    asteroid.y = 0;
+                    asteroid.x = app.screen.width *Math.random();
+
+                    app.stage.addChild(asteroid);
+
+                    asteroids.push(asteroid);
+
+                    var spawnRate = 1000 - (Date.now()-startTime)/100;
+                    if (spawnRate < 100) spawnRate = 100
+                    var spawnVariation = 200;
+
+                    console.log(spawnRate)
+                    asteroidSpawn = Date.now()+((spawnRate-spawnVariation)+(Math.random()*(spawnVariation*2)));
+                }
+
+                for  (let i = 0; i < asteroids.length; i++) {
+                    asteroids[i].y += app.screen.height *0.01;
+                    if (asteroids[i].y > app.screen.height+50) {
+                        app.stage.removeChild(asteroids[i]);
+                        asteroids.splice(i,1);
                     }
                 }
             });
