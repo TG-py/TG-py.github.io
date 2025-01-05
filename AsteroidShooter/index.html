@@ -48,6 +48,46 @@
                 }
             }
 
+            function testForCollision(object1, bounds1, object2, bounds2)
+            {   
+                for(let i = 0; i < bounds1.length; i++)
+                {
+                    for(let j = 0; j < bounds2.length; j++)
+                    {
+                        var x1 = object1.x+bounds1[i].x;
+                        var y1 = object1.y+bounds1[i].y;
+                        var w1 = bounds1[i].width;
+                        var h1 = bounds1[i].height;
+                        var x2 = object2.x+bounds2[j].x;
+                        var y2 = object2.y+bounds2[j].y;
+                        var w2 = bounds2[j].width;
+                        var h2 = bounds2[j].height;
+
+                        if(x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2)
+                        {
+                            //test collision
+/*
+                            let testGr = new PIXI.Graphics();
+                            testGr.rect(object1.x+bounds1[i].x, object1.y+bounds1[i].y, bounds1[i].width, bounds1[i].height);
+                            testGr.stroke({width:2, color:0xf20505});
+                            app.stage.addChild(testGr);
+                            console.log(bounds1[i]);
+
+                            testGr = new PIXI.Graphics();
+                            testGr.rect(x2, y2, w2, h2);
+                            testGr.stroke({width:2, color:0xf20505});
+                            app.stage.addChild(testGr);
+                            console.log(bounds2[j]);
+*/
+
+                            return true;
+                        }
+                    }
+                }
+                
+                return false;
+            }
+
             const app = new PIXI.Application();
             await app.init({ background: `#070124`, width: window.innerWidth-22, height: window.innerHeight-22});
 
@@ -63,80 +103,156 @@
             ship.scale = app.screen.width/1898;
             ship.x = app.screen.width *0.5;
             ship.y = app.screen.height *0.85;
+            
+            const shipBounds = [new PIXI.Rectangle(-app.screen.width*0.048, app.screen.width*0.025, app.screen.width*0.096, app.screen.width*0.023),
+                                new PIXI.Rectangle(-app.screen.width*0.038, 0, app.screen.width*0.076, app.screen.width*0.025),
+                                new PIXI.Rectangle(-app.screen.width*0.03, -app.screen.width*0.025, app.screen.width*0.06, app.screen.width*0.025),
+                                new PIXI.Rectangle(-app.screen.width*0.02, -app.screen.width*0.05, app.screen.width*0.04, app.screen.width*0.025)];
+            var asteroidBounds = [];
+            for(let i = 0; i < 25; i++)
+            {
+                var a = i/1000;
+                var b = Math.sqrt((25*25)-(i*i))/1000;
 
+                console.log(a);
+                console.log(b);
+
+                asteroidBounds.push(new PIXI.Rectangle(-app.screen.width*a, -app.screen.width*b, app.screen.width*2*a, app.screen.width*2*b));
+            }
+            const laserBounds = [new PIXI.Rectangle(-app.screen.width*0.002, -app.screen.width*0.013, app.screen.width*0.004, app.screen.width*0.026)]
+
+            //test collision box for ship
+/*
+            for(let i = 0; i < shipBounds.length; i++)
+            {
+                let testGr = new PIXI.Graphics();
+                testGr.rect(ship.x+shipBounds[i].x, ship.y+shipBounds[i].y, shipBounds[i].width, shipBounds[i].height);
+                testGr.stroke({width:2, color:0xf20505});
+                app.stage.addChild(testGr);
+                console.log(shipBounds[i])
+            }
+*/
+
+
+            const laserCooldown = 200;
+            const moveSpeed = 0.01;
             var shipPos = 0.5;
             var lasers = [];
-            const cooldown = 200;
             var endOfCooldown = Date.now();
             var asteroidSpawn = Date.now();
             var asteroids = [];
+            var gameLoop = true;
 
             app.ticker.add(() =>
-            {
-                const moveSpeed = 0.01;
+            {   
+                gameloopBreak: if (gameLoop)
+                {
+                    //collisions
 
-                if (controller.keys.left && shipPos > 0) shipPos -= moveSpeed;
-                else if (controller.keys.right && shipPos < 1) shipPos += moveSpeed;
-                
-                ship.x = app.screen.width *shipPos;
+                    for (let i = 0; i < asteroids.length; i++)
+                    {
+                        if (testForCollision(asteroids[i], asteroidBounds, ship, shipBounds))
+                        {
+                            gameLoop = false
+                            break gameloopBreak;
+                        }
 
-                if (controller.keys.space && endOfCooldown <= Date.now()) {
-                    let laserGr = new PIXI.Graphics();
-                    laserGr.rect(0,0,7,40);
-                    laserGr.fill(0xff0000);
-                    let texture = app.renderer.generateTexture(laserGr);
-                    let laser = new PIXI.Sprite(texture);
-
-                    laser.anchor.set(0.5);
-                    laser.scale = app.screen.width/1898;
-                    laser.x = app.screen.width *shipPos;
-                    laser.y = app.screen.height *0.85;
-
-                    app.stage.addChild(laser);
-
-                    lasers.push(laser);
-
-                    endOfCooldown = Date.now() + cooldown;
-                }
-
-                for (let i = 0; i < lasers.length; i++) {
-                    lasers[i].y -= app.screen.height *0.05;
-                    if (lasers[i].y < 0) {
-                        app.stage.removeChild(lasers[i]);
-                        lasers.splice(i,1);
+                        for (let j = 0; j < lasers.length; j++)
+                        {
+                            if (testForCollision(asteroids[i], asteroidBounds, lasers[j], laserBounds))
+                            {
+                                app.stage.removeChild(asteroids[i]);
+                                app.stage.removeChild(lasers[j]);
+                                asteroids.splice(i,1);
+                                lasers.splice(j,1);
+                            }
+                        }
                     }
-                }
 
-                if (asteroidSpawn <= Date.now()) {
-                    let asteroidGr = new PIXI.Graphics();
-                    asteroidGr.circle(0,0,50);
-                    asteroidGr.fill(0x282828);
-                    let texture = app.renderer.generateTexture(asteroidGr);
-                    let asteroid = new PIXI.Sprite(texture);
+                    //ship movement
+                    if (controller.keys.left && shipPos > 0) shipPos -= moveSpeed;
+                    else if (controller.keys.right && shipPos < 1) shipPos += moveSpeed;
+                    
+                    ship.x = app.screen.width *shipPos;
 
-                    asteroid.anchor.set(0.5);
-                    asteroid.scale = app.screen.width/1898;
-                    asteroid.y = 0;
-                    asteroid.x = app.screen.width *Math.random();
+                    //shooting
+                    if (controller.keys.space && endOfCooldown <= Date.now())
+                    {
+                        let laserGr = new PIXI.Graphics();
+                        laserGr.rect(0,0,app.screen.width*0.004,app.screen.width*0.026);
+                        laserGr.fill(0xff0000);
+                        let texture = app.renderer.generateTexture(laserGr);
+                        let laser = new PIXI.Sprite(texture);
 
-                    app.stage.addChild(asteroid);
+                        laser.anchor.set(0.5);
+                        laser.scale = app.screen.width/1898;
+                        laser.x = app.screen.width *shipPos;
+                        laser.y = app.screen.height *0.85;
 
-                    asteroids.push(asteroid);
+                        app.stage.addChild(laser);
 
-                    var spawnRate = 1000 - (Date.now()-startTime)/100;
-                    if (spawnRate < 100) spawnRate = 100
-                    var spawnVariation = 200;
+                        lasers.push(laser);
 
-                    console.log(spawnRate)
-                    asteroidSpawn = Date.now()+((spawnRate-spawnVariation)+(Math.random()*(spawnVariation*2)));
-                }
-
-                for  (let i = 0; i < asteroids.length; i++) {
-                    asteroids[i].y += app.screen.height *0.01;
-                    if (asteroids[i].y > app.screen.height+50) {
-                        app.stage.removeChild(asteroids[i]);
-                        asteroids.splice(i,1);
+                        endOfCooldown = Date.now() + laserCooldown;
                     }
+
+                    //move lasers every tick
+                    for (let i = 0; i < lasers.length; i++)
+                    {
+                        lasers[i].y -= app.screen.height *0.05;
+                        if (lasers[i].y < 0) {
+                            app.stage.removeChild(lasers[i]);
+                            lasers.splice(i,1);
+                        }
+                    }
+
+                    //spawn asteroid
+                    if (asteroidSpawn <= Date.now())
+                    {
+                        let asteroidGr = new PIXI.Graphics();
+                        asteroidGr.circle(0,0,app.screen.width*0.025);
+                        asteroidGr.fill(0x282828);
+                        let texture = app.renderer.generateTexture(asteroidGr);
+                        let asteroid = new PIXI.Sprite(texture);
+
+                        asteroid.anchor.set(0.5);
+                        asteroid.y = 0;
+                        asteroid.x = app.screen.width *Math.random();
+
+                        app.stage.addChild(asteroid);
+
+                        asteroids.push(asteroid);
+                        
+
+                        //test collision box for asteroid
+/*
+                        for(let i = 0; i < asteroidBounds.length; i++)
+                        {
+                            let testGr = new PIXI.Graphics();
+                            testGr.rect(asteroid.x+asteroidBounds[i].x, asteroid.y+asteroidBounds[i].y, asteroidBounds[i].width, asteroidBounds[i].height);
+                            testGr.stroke({width:2, color:0xf20505});
+                            app.stage.addChild(testGr);
+                            console.log(asteroidBounds[i])
+                        }
+*/
+
+                        var spawnRate = 1000 - (Date.now()-startTime)/100;
+                        if (spawnRate < 100) spawnRate = 100
+                        var spawnVariation = 200;
+
+                        asteroidSpawn = Date.now()+((spawnRate-spawnVariation)+(Math.random()*(spawnVariation*2)));
+                    }
+
+                    //move asteroid every tick
+                    for  (let i = 0; i < asteroids.length; i++)
+                    {
+                        asteroids[i].y += app.screen.height *0.004;
+                        if (asteroids[i].y > app.screen.height+50) {
+                            app.stage.removeChild(asteroids[i]);
+                            asteroids.splice(i,1);
+                        }
+                    }
+                    
                 }
             });
         </script>
