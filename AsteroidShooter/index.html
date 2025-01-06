@@ -108,12 +108,22 @@
 
             document.body.appendChild(app.canvas);
 
+            //adding keypress controller
+            const controller = new Controller();
+
+            //creating randomised background
+            var star = new PIXI.Graphics();
+            for(let i = 0; i < Math.round(100+1000*Math.random()); i++)
+            {
+            star.circle(app.screen.width*Math.random(), app.screen.height*Math.random(), app.screen.width*0.002*Math.random());
+            star.fill([1-0.2*Math.random(), 1-0.2*Math.random(), 1-0.4*Math.random()]);
+            //star.fill(0xffffff);
+            app.stage.addChild(star);
+            }
+
             //loading ship sprite
             await PIXI.Assets.load('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
             let ship = PIXI.Sprite.from('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
-
-            //adding keypress controller
-            const controller = new Controller();
 
             //add ship to screen and set variables of ship
             app.stage.addChild(ship);
