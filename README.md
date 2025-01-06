@@ -4,7 +4,7 @@ Asteroid Shooter:
 
     TODOs:
 
-        -add random asterois speeds
+        -add asteroid collisions with each other
         -add explosions for asteroids
         -add explosions for ship
         -add randomised stars in background
