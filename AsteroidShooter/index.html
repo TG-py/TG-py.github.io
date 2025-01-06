@@ -128,7 +128,7 @@
                                 new PIXI.Rectangle(-app.screen.width*0.03, -app.screen.width*0.025, app.screen.width*0.06, app.screen.width*0.025),
                                 new PIXI.Rectangle(-app.screen.width*0.02, -app.screen.width*0.05, app.screen.width*0.04, app.screen.width*0.025)];
             var asteroidBounds = [];
-            for(let i = 0; i < 25; i++)
+            for(let i = 0; i < 25; i+=5)
             {
                 var a = i/1000;
                 var b = Math.sqrt((25*25)-(i*i))/1000;
