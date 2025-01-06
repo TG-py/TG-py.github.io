@@ -14,15 +14,6 @@
                 KeyD: `right`,
                 Space: `space`
                 };
-            const laserCooldown = 200;
-            const moveSpeed = 0.01;
-            var shipPos = 0.5;
-            var lasers = [];
-            var endOfCooldown = Date.now();
-            var asteroidSpawn = Date.now();
-            var asteroids = [];
-            //change to false when menu is added
-            var gameloopRunning = true;
 
             export class Controller
             {
@@ -102,6 +93,30 @@
                 return false;
             }
 
+            function startGame()
+            {
+                menuloopEnd = true;
+            }
+
+            //set variables
+            const laserCooldown = 200;
+            const moveSpeed = 0.01;
+            var shipPos = 0.5;
+            var lasers = [];
+            var endOfCooldown = Date.now();
+            var asteroidSpawn = Date.now();
+            var asteroids = [];
+            var menuloopStart = true;
+            var menuloopEnd = false;
+            var gameloopStarting = false;
+            var gameloopRunning = false;
+            var gameloopEnd = false;
+            var startTime;
+            var shipBounds;
+            var asteroidBounds;
+            var laserBounds;
+            var controller;
+
             //initiate application window
             const app = new PIXI.Application();
             await app.init({ background: `#070124`, width: window.innerWidth-22, height: window.innerHeight-22});
@@ -109,36 +124,94 @@
             document.body.appendChild(app.canvas);
 
             //adding keypress controller
-            const controller = new Controller();
+            controller = new Controller();
+
+            //load menu fonts
+            PIXI.Assets.addBundle('fonts', [
+                {alias: 'titleFont', src: 'https://tg-py.github.io/AsteroidShooter/titleFont.ttf'}
+            ])
+
+            await PIXI.Assets.loadBundle('fonts')
 
             //creating randomised background
             var star = new PIXI.Graphics();
             for(let i = 0; i < Math.round(100+1000*Math.random()); i++)
             {
-            star.circle(app.screen.width*Math.random(), app.screen.height*Math.random(), app.screen.width*0.002*Math.random());
-            star.fill([1-0.2*Math.random(), 1-0.2*Math.random(), 1-0.4*Math.random()]);
-            //star.fill(0xffffff);
-            app.stage.addChild(star);
+                star.circle(app.screen.width*Math.random(), app.screen.height*Math.random(), app.screen.width*0.002*Math.random());
+                star.fill([1-0.2*Math.random(), 1-0.2*Math.random(), 1-0.4*Math.random()]);
+                app.stage.addChild(star);
             }
 
-            //loading ship sprite
+            //create menu background
+            var menuBackgroundGr = new PIXI.Graphics();
+            menuBackgroundGr.roundRect(0, 0, app.screen.width*0.3, app.screen.height*0.7, 16);
+            menuBackgroundGr.fill(0xffffff);
+
+            let menuBackgroundTexture = app.renderer.generateTexture(menuBackgroundGr);
+            let menuBackground = new PIXI.Sprite(menuBackgroundTexture);
+
+            menuBackground.anchor.set(0.5);
+            menuBackground.x = app.screen.width*0.5;
+            menuBackground.y = app.screen.height*0.5;
+            
+            //create title text
+            const titleText = new PIXI.Text({ text: 'ASTEROID SHOOTER', style: { fontFamily: 'titleFont', fontSize: app.screen.width*0.02}});
+                    
+            titleText.anchor = 0.5;
+            titleText.x = app.screen.width*0.5;
+            titleText.y = app.screen.height*0.2;
+
+            //create start button
+            var startButtonGr = new PIXI.Graphics();
+            startButtonGr.roundRect(0, 0, app.screen.width*0.28, app.screen.height*0.1, 16);
+            startButtonGr.fill(0xd00000);
+
+            let startButtonTexture = app.renderer.generateTexture(startButtonGr);
+            let startButton = new PIXI.Sprite(startButtonTexture);
+
+            startButton.anchor.set(0.5);
+            startButton.x = app.screen.width*0.5;
+            startButton.y = app.screen.height*0.78;
+
+            startButton.eventMode = 'static';
+            startButton.curser = 'pointer';
+            startButton.on('pointerdown', startGame);
+
+            //create start button text
+            const startButtonText = new PIXI.Text({ text: 'START', style: { fontFamily: 'titleFont', fontSize: app.screen.width*0.02}});
+                    
+            startButtonText.anchor = 0.5;
+            startButtonText.x = app.screen.width*0.5;
+            startButtonText.y = app.screen.height*0.78;
+
+            //create ship
             await PIXI.Assets.load('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
             let ship = PIXI.Sprite.from('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
-
-            //add ship to screen and set variables of ship
-            app.stage.addChild(ship);
+            
             ship.anchor.set(0.5);
             ship.scale = app.screen.width/1898;
             ship.x = app.screen.width *0.5;
             ship.y = app.screen.height *0.85;
-            
+
+            //create laser
+            let laserGr = new PIXI.Graphics();
+            laserGr.rect(0,0,app.screen.width*0.004,app.screen.width*0.026);
+            laserGr.fill(0xff0000);
+            let laserTexture = app.renderer.generateTexture(laserGr);
+
+            //create asteroid
+            let asteroidGr = new PIXI.Graphics();
+            asteroidGr.circle(0,0,app.screen.width*0.025);
+            asteroidGr.fill(0x282828);
+            let asteroidTexture = app.renderer.generateTexture(asteroidGr);
+
             //create bounds for all objects with collisions
-            const shipBounds = [new PIXI.Rectangle(-app.screen.width*0.048, app.screen.width*0.025, app.screen.width*0.096, app.screen.width*0.023),
+            shipBounds = [new PIXI.Rectangle(-app.screen.width*0.048, app.screen.width*0.025, app.screen.width*0.096, app.screen.width*0.023),
                                 new PIXI.Rectangle(-app.screen.width*0.038, 0, app.screen.width*0.076, app.screen.width*0.025),
                                 new PIXI.Rectangle(-app.screen.width*0.03, -app.screen.width*0.025, app.screen.width*0.06, app.screen.width*0.025),
                                 new PIXI.Rectangle(-app.screen.width*0.02, -app.screen.width*0.05, app.screen.width*0.04, app.screen.width*0.025)];
-            var asteroidBounds = [];
-            for(let i = 0; i < 25; i+=5)
+            asteroidBounds = [];
+            for(let i = 0; i <= 25; i+=5)
             {
                 var a = i/1000;
                 var b = Math.sqrt((25*25)-(i*i))/1000;
@@ -148,10 +221,10 @@
 
                 asteroidBounds.push(new PIXI.Rectangle(-app.screen.width*a, -app.screen.width*b, app.screen.width*2*a, app.screen.width*2*b));
             }
-            const laserBounds = [new PIXI.Rectangle(-app.screen.width*0.002, -app.screen.width*0.013, app.screen.width*0.004, app.screen.width*0.026)]
+            laserBounds = [new PIXI.Rectangle(-app.screen.width*0.002, -app.screen.width*0.013, app.screen.width*0.004, app.screen.width*0.026)]
 
             //test collision box for ship
-/*
+            /*
             for(let i = 0; i < shipBounds.length; i++)
             {
                 let testGr = new PIXI.Graphics();
@@ -160,14 +233,41 @@
                 app.stage.addChild(testGr);
                 console.log(shipBounds[i])
             }
-*/
+            */
 
-            //set start time for game
-            //move to start button on menu when added
-            const startTime = Date.now();
-
+            //app start
             app.ticker.add(() =>
             {   
+                menuStart: if (menuloopStart)
+                {
+                    app.stage.addChild(menuBackground);
+                    app.stage.addChild(titleText);
+                    app.stage.addChild(startButton);
+                    app.stage.addChild(startButtonText);
+                    menuloopStart = false;
+                }
+
+                menuEnd: if (menuloopEnd)
+                {
+                    app.stage.removeChild(menuBackground);
+                    app.stage.removeChild(titleText);
+                    app.stage.removeChild(startButton);
+                    app.stage.removeChild(startButtonText);
+                    gameloopStarting = true;
+                    menuloopEnd = false;
+                }
+
+                gameloopStart: if (gameloopStarting)
+                {
+                    //set start time for game
+                    startTime = Date.now();
+
+                    app.stage.addChild(ship);
+
+                    gameloopRunning = true;
+                    gameloopStarting = false;
+                }
+
                 //main gameloop use gameloopRunning to start and stop the gameloop
                 gameloop: if (gameloopRunning)
                 {
@@ -177,7 +277,8 @@
                     {
                         if (testForCollision(asteroids[i][0], asteroidBounds, ship, shipBounds))
                         {
-                            gameloopRunning = false
+                            gameloopRunning = false;
+                            gameloopEnd = true;
                             break gameloop;
                         }
 
@@ -202,16 +303,13 @@
                     //shooting
                     if (controller.keys.space && endOfCooldown <= Date.now())
                     {
-                        let laserGr = new PIXI.Graphics();
-                        laserGr.rect(0,0,app.screen.width*0.004,app.screen.width*0.026);
-                        laserGr.fill(0xff0000);
-                        let texture = app.renderer.generateTexture(laserGr);
-                        let laser = new PIXI.Sprite(texture);
+                        let laser = new PIXI.Sprite(laserTexture);
 
                         laser.anchor.set(0.5);
                         laser.scale = app.screen.width/1898;
-                        laser.x = app.screen.width *shipPos;
                         laser.y = app.screen.height *0.85;
+                        
+                        laser.x = app.screen.width *shipPos;
 
                         app.stage.addChild(laser);
 
@@ -233,11 +331,7 @@
                     //spawn asteroid
                     if (asteroidSpawn <= Date.now())
                     {
-                        let asteroidGr = new PIXI.Graphics();
-                        asteroidGr.circle(0,0,app.screen.width*0.025);
-                        asteroidGr.fill(0x282828);
-                        let texture = app.renderer.generateTexture(asteroidGr);
-                        let asteroid = new PIXI.Sprite(texture);
+                        let asteroid = new PIXI.Sprite(asteroidTexture);
 
                         asteroid.anchor.set(0.5);
                         asteroid.y = 0;
@@ -277,6 +371,25 @@
                         }
                     }
                     
+                }
+
+                gameEnd: if (gameloopEnd)
+                {
+                    app.stage.removeChild(ship);
+                    for (let i = 0; i < asteroids.length; i++)
+                    {
+                        app.stage.removeChild(asteroids[i][0]);
+                    }
+                    asteroids = [];
+
+                    for (let i = 0; i < lasers.length; i++)
+                    {
+                        app.stage.removeChild(lasers[i]);
+                    }
+                    lasers = [];
+
+                    menuloopStart = true;
+                    gameloopEnd = false;
                 }
             });
         </script>
