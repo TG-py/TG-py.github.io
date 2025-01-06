@@ -7,28 +7,40 @@
 
     <body>
         <script type="module">
-            const startTime = Date.now();
-
+            
+            //array mapping keys to functions
             const keyMap = {
-            KeyA: `left`,
-            KeyD: `right`,
-            Space: `space`
-            };
+                KeyA: `left`,
+                KeyD: `right`,
+                Space: `space`
+                };
+            const laserCooldown = 200;
+            const moveSpeed = 0.01;
+            var shipPos = 0.5;
+            var lasers = [];
+            var endOfCooldown = Date.now();
+            var asteroidSpawn = Date.now();
+            var asteroids = [];
+            //change to false when menu is added
+            var gameloopRunning = true;
 
             export class Controller
             {
                 constructor()
                 {
+                    //array of keypress function states
                     this.keys = {
                         left: false,
                         right: false,
                         space: false
-                    };
+                        };
 
+                    //keypress listeners
                     window.addEventListener(`keydown`, (event) => this.keydownHandler(event));
                     window.addEventListener(`keyup`, (event) => this.keyupHandler(event));
                 }
 
+                //sets keypress function to true on press
                 keydownHandler(event)
                 {
                     const key = keyMap[event.code];
@@ -38,6 +50,7 @@
                     this.keys[key] = true;
                 }
 
+                //sets keypress function to false on release
                 keyupHandler(event)
                 {
                     const key = keyMap[event.code];
@@ -48,6 +61,7 @@
                 }
             }
 
+            //tests for a collision between to two objects with lists on bounding boxs
             function testForCollision(object1, bounds1, object2, bounds2)
             {   
                 for(let i = 0; i < bounds1.length; i++)
@@ -88,22 +102,27 @@
                 return false;
             }
 
+            //initiate application window
             const app = new PIXI.Application();
             await app.init({ background: `#070124`, width: window.innerWidth-22, height: window.innerHeight-22});
 
             document.body.appendChild(app.canvas);
 
+            //loading ship sprite
             await PIXI.Assets.load('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
             let ship = PIXI.Sprite.from('https://pixijs.com/assets/files/sample-747abf529b135a1f549dff3ec846afbc.png');
 
+            //adding keypress controller
             const controller = new Controller();
 
+            //add ship to screen and set variables of ship
             app.stage.addChild(ship);
             ship.anchor.set(0.5);
             ship.scale = app.screen.width/1898;
             ship.x = app.screen.width *0.5;
             ship.y = app.screen.height *0.85;
             
+            //create bounds for all objects with collisions
             const shipBounds = [new PIXI.Rectangle(-app.screen.width*0.048, app.screen.width*0.025, app.screen.width*0.096, app.screen.width*0.023),
                                 new PIXI.Rectangle(-app.screen.width*0.038, 0, app.screen.width*0.076, app.screen.width*0.025),
                                 new PIXI.Rectangle(-app.screen.width*0.03, -app.screen.width*0.025, app.screen.width*0.06, app.screen.width*0.025),
@@ -133,19 +152,14 @@
             }
 */
 
-
-            const laserCooldown = 200;
-            const moveSpeed = 0.01;
-            var shipPos = 0.5;
-            var lasers = [];
-            var endOfCooldown = Date.now();
-            var asteroidSpawn = Date.now();
-            var asteroids = [];
-            var gameLoop = true;
+            //set start time for game
+            //move to start button on menu when added
+            const startTime = Date.now();
 
             app.ticker.add(() =>
             {   
-                gameloopBreak: if (gameLoop)
+                //main gameloop use gameloopRunning to start and stop the gameloop
+                gameloop: if (gameloopRunning)
                 {
                     //collisions
 
@@ -153,8 +167,8 @@
                     {
                         if (testForCollision(asteroids[i][0], asteroidBounds, ship, shipBounds))
                         {
-                            gameLoop = false
-                            break gameloopBreak;
+                            gameloopRunning = false
+                            break gameloop;
                         }
 
                         for (let j = 0; j < lasers.length; j++)
